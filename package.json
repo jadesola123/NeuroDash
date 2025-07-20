@@ -1,0 +1,20 @@
+{
+  "name": "neurodash",
+  "version": "1.0.0",
+  "description": "Voice-controlled cognitive training game with sub-300ms latency",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "dev": "live-server --port=8000",
+    "test": "node tests/latency-test.js"
+  },
+  "keywords": ["voice-ai", "accessibility", "cognitive-training", "assemblyai", "real-time"],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "livekit-client": "^1.15.0"
+  },
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  }
+}
