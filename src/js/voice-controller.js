@@ -1,77 +1,87 @@
 // voice-controller.js
 
-import AssemblyAI from 'https://cdn.jsdelivr.net/npm/assemblyai@latest/dist/assemblyai.es.js';
-import GameEngine from './game-engine.js';
+class VoiceController {
+  constructor({ onTranscription, onFinalTranscription }) {
+    this.ws = null;
+    this.mic = null;
+    this.listening = false;
+    this.transcriptionHandler = onTranscription;
+    this.finalHandler = onFinalTranscription;
+    this.sampleRate = 16000;
+    this.apiKey = import.meta.env ? import.meta.env.VITE_ASSEMBLY_API_KEY : (window.ASSEMBLY_API_KEY || '');
+  }
 
-const LATENCY_DISPLAY = document.getElementById('latency');
-const TRANSCRIPT_DISPLAY = document.getElementById('transcript-display');
-const FEEDBACK_DISPLAY = document.getElementById('feedback');
-
-const CORRECT_SOUND = new Audio('./src/assets/sounds/correct.mp3');
-const WRONG_SOUND = new Audio('./src/assets/sounds/wrong.mp3');
-
-let game = null;
-let currentChallenge = null;
-let promptCount = 0;
-let sessionStart = null;
-let lastPromptTime = null;
-
-const MAX_PROMPTS = 10;
-
-export function initVoiceController(apiKey) {
-  const aai = new AssemblyAI({ apiKey });
-  const transcriber = aai.realtime.transcriber({
-    sampleRate: 16000,
-    onTranscript: handleTranscript,
-    onOpen: () => console.log('WebSocket connected.'),
-    onError: (err) => console.error('AssemblyAI error:', err),
-    onClose: () => console.log('WebSocket closed.')
-  });
-
-  navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-    transcriber.attachAudio(stream);
-    transcriber.start();
-  });
-
-  game = new GameEngine();
-  game.loadChallenge('color'); // Start with color challenge by default
-  currentChallenge = game.getCurrentChallenge();
-  currentChallenge.start();
-  promptCount = 1;
-  sessionStart = Date.now();
-  lastPromptTime = sessionStart;
-}
-
-function handleTranscript(msg) {
-  const spoken = msg.text.trim();
-  if (!spoken) return;
-
-  const now = Date.now();
-  const latency = now - lastPromptTime;
-  LATENCY_DISPLAY.textContent = `${latency}ms`;
-  TRANSCRIPT_DISPLAY.textContent = `You said: "${spoken}"`;
-
-  const result = currentChallenge.checkAnswer(spoken);
-  if (result.correct) {
-    CORRECT_SOUND.play();
-    FEEDBACK_DISPLAY.textContent = '✅ Correct';
-    game.analytics.recordResult(true, latency);
-
-    if (promptCount >= MAX_PROMPTS) {
-      game.endSession();
-    } else {
-      setTimeout(() => {
-        currentChallenge.generateNewColor();
-        currentChallenge.render();
-        lastPromptTime = Date.now();
-        promptCount++;
-        FEEDBACK_DISPLAY.textContent = '';
-        TRANSCRIPT_DISPLAY.textContent = '';
-      }, 1000);
+  async init() {
+    if (!this.apiKey) {
+      console.error("❌ AssemblyAI API key missing.");
+      alert("AssemblyAI API key missing. Check .env or index.html.");
+      return;
     }
-  } else {
-    WRONG_SOUND.play();
-    FEEDBACK_DISPLAY.textContent = result.instruction || '❌ Try again';
-    game.analytics.recordResult(false, latency);
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      this.audioContext = new AudioContext();
+      const source = this.audioContext.createMediaStreamSource(stream);
+      const processor = this.audioContext.createScriptProcessor(4096, 1, 1);
+
+      this.ws = new WebSocket(`wss://api.assemblyai.com/v2/realtime/ws?sample_rate=${this.sampleRate}`);
+
+      this.ws.onopen = () => {
+        this.listening = true;
+        console.log("🎤 Connected to AssemblyAI.");
+        processor.onaudioprocess = (e) => {
+          if (!this.listening) return;
+          const floatData = e.inputBuffer.getChannelData(0);
+          const int16Data = this._convertFloat32ToInt16(floatData);
+          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(int16Data);
+          }
+        };
+        source.connect(processor);
+        processor.connect(this.audioContext.destination);
+      };
+
+      this.ws.onmessage = (message) => {
+        const res = JSON.parse(message.data);
+        if (res.text && res.message_type === 'PartialTranscript') {
+          this.transcriptionHandler?.(res.text);
+        }
+        if (res.text && res.message_type === 'FinalTranscript') {
+          const latency = res.audio_end - res.audio_start;
+          this.finalHandler?.(res.text, latency);
+        }
+      };
+
+      this.ws.onerror = (err) => {
+        console.error("WebSocket error:", err);
+        alert("❌ WebSocket error. Check console.");
+      };
+
+      this.ws.onclose = () => {
+        this.listening = false;
+        console.log("🔇 Disconnected from AssemblyAI.");
+      };
+    } catch (error) {
+      console.error("🎤 Mic error:", error);
+      alert("Microphone access error. Make sure it's allowed.");
+    }
+  }
+
+  stop() {
+    this.listening = false;
+    if (this.ws) this.ws.close();
+    if (this.audioContext) this.audioContext.close();
+  }
+
+  _convertFloat32ToInt16(buffer) {
+    const l = buffer.length;
+    const result = new Int16Array(l);
+    for (let i = 0; i < l; i++) {
+      result[i] = Math.min(1, buffer[i]) * 0x7FFF;
+    }
+    return result.buffer;
   }
 }
+
+export default VoiceController;
