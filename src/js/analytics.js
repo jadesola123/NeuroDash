@@ -1,40 +1,77 @@
-// analytics.js
+// game-engine.js
 
-class Analytics {
+import ColorChallenge from './challenges/color-challenge.js';
+import MemoryChallenge from './challenges/memory-challenge.js';
+import StroopChallenge from './challenges/stroop-challenge.js';
+import analytics from './analytics.js';
+
+class GameEngine {
   constructor() {
-    this.results = [];
-  }
-
-  recordResult({ challengeType, correct, latency }) {
-    this.results.push({ challengeType, correct, latency });
-  }
-
-  getAverageLatency() {
-    if (this.results.length === 0) return 0;
-    const total = this.results.reduce((acc, r) => acc + r.latency, 0);
-    return Math.round(total / this.results.length);
-  }
-
-  getCorrectCount() {
-    return this.results.filter(r => r.correct).length;
-  }
-
-  getTotalCount() {
-    return this.results.length;
-  }
-
-  getStats() {
-    return {
-      total: this.getTotalCount(),
-      correct: this.getCorrectCount(),
-      avgLatency: this.getAverageLatency()
+    this.challenges = {
+      color: new ColorChallenge(),
+      memory: new MemoryChallenge(),
+      stroop: new StroopChallenge(),
     };
+    this.currentChallenge = null;
+    this.challengeKeys = Object.keys(this.challenges);
+    this.challengeIndex = 0;
+    this.voiceController = null;
   }
 
-  reset() {
-    this.results = [];
+  init(voiceController) {
+    this.voiceController = voiceController;
+    this.voiceController.setTranscriptionCallback(this.handleTranscript.bind(this));
+  }
+
+  start() {
+    analytics.reset();
+    this.challengeIndex = 0;
+    this.launchNextChallenge();
+  }
+
+  launchNextChallenge() {
+    if (this.challengeIndex >= this.challengeKeys.length) {
+      this.endSession();
+      return;
+    }
+
+    const key = this.challengeKeys[this.challengeIndex];
+    this.currentChallenge = this.challenges[key];
+    this.currentChallenge.setDifficulty('easy');
+    this.currentChallenge.start();
+  }
+
+  handleTranscript(transcript) {
+    if (!this.currentChallenge || !transcript) return;
+
+    const result = this.currentChallenge.checkAnswer(transcript);
+
+    if (result && typeof result.correct === 'boolean') {
+      analytics.recordResult({
+        challengeType: this.challengeKeys[this.challengeIndex],
+        correct: result.correct,
+        latency: result.latency || 0
+      });
+
+      if (result.correct && this.currentChallenge.promptCount >= this.currentChallenge.maxPrompts) {
+        this.challengeIndex++;
+        setTimeout(() => this.launchNextChallenge(), 2000);
+      }
+    }
+  }
+
+  endSession() {
+    const stats = analytics.getStats();
+    const container = document.getElementById('challenge-container');
+    container.innerHTML = `
+      <div class="challenge-title">Session Complete!</div>
+      <div class="voice-instruction">
+        ✅ Correct Answers: <strong>${stats.correct}/${stats.total}</strong><br/>
+        ⚡ Avg Latency: <strong>${stats.avgLatency}ms</strong>
+      </div>
+    `;
   }
 }
 
-window.analytics = new Analytics();
-export default window.analytics;
+window.engine = new GameEngine();
+export default window.engine;
