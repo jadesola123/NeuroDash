@@ -1,70 +1,52 @@
-/**
- * Game Engine - Manages challenges, difficulty, and game state
- */
+// game-engine.js
+
+import ColorChallenge from './challenges/color-challenge.js';
+import MemoryChallenge from './challenges/memory-challenge.js';
+import StroopChallenge from './challenges/stroop-challenge.js';
+import Analytics from './analytics.js';
 
 class GameEngine {
-    constructor(analytics) {
-        this.analytics = analytics;
-        this.challenges = [
-            new ColorChallenge(),
-            new MemoryChallenge(), 
-            new StroopChallenge()
-        ];
-        this.currentChallengeIndex = 0;
-        this.difficulty = 'easy';
-        this.isActive = false;
-    }
+  constructor() {
+    this.challengeMap = {
+      color: new ColorChallenge(),
+      memory: new MemoryChallenge(),
+      stroop: new StroopChallenge()
+    };
+    this.currentChallengeKey = 'color';
+    this.analytics = new Analytics();
+  }
 
-    start() {
-        this.isActive = true;
-        this.getCurrentChallenge().start();
-    }
-
-    stop() {
-        this.isActive = false;
+  loadChallenge(type) {
+    if (this.challengeMap[type]) {
+      if (this.getCurrentChallenge()) {
         this.getCurrentChallenge().stop();
+      }
+      this.currentChallengeKey = type;
+      this.analytics.reset();
     }
+  }
 
-    processVoiceCommand(transcription, confidence) {
-        if (!this.isActive) return { correct: false, instruction: 'Game not active' };
-        
-        const challenge = this.getCurrentChallenge();
-        const result = challenge.checkAnswer(transcription, confidence);
-        
-        if (result.correct) {
-            // Auto-advance to next challenge after correct answer
-            setTimeout(() => this.nextChallenge(), 1500);
-        }
-        
-        return result;
-    }
+  getCurrentChallenge() {
+    return this.challengeMap[this.currentChallengeKey];
+  }
 
-    getCurrentChallenge() {
-        return this.challenges[this.currentChallengeIndex];
-    }
+  endSession() {
+    const container = document.getElementById('challenge-container');
+    const summary = this.analytics.getSummary();
 
-    nextChallenge() {
-        if (this.isActive) {
-            this.getCurrentChallenge().stop();
-        }
-        
-        this.currentChallengeIndex = (this.currentChallengeIndex + 1) % this.challenges.length;
-        
-        if (this.isActive) {
-            this.getCurrentChallenge().start();
-        }
-    }
-
-    adjustDifficulty() {
-        const levels = ['easy', 'medium', 'hard', 'insane'];
-        const currentIndex = levels.indexOf(this.difficulty);
-        this.difficulty = levels[(currentIndex + 1) % levels.length];
-        
-        // Update all challenges with new difficulty
-        this.challenges.forEach(challenge => challenge.setDifficulty(this.difficulty));
-    }
-
-    getCurrentDifficulty() {
-        return this.difficulty.charAt(0).toUpperCase() + this.difficulty.slice(1);
-    }
+    container.innerHTML = `
+      <div class="challenge-title">🎉 Session Complete!</div>
+      <div class="summary-box">
+        <p>✅ Correct Answers: ${summary.correct}</p>
+        <p>❌ Incorrect Answers: ${summary.incorrect}</p>
+        <p>🎯 Accuracy: ${summary.accuracy}%</p>
+        <p>⚡ Avg Response Time: ${summary.averageLatency}ms</p>
+      </div>
+      <div style="margin-top: 1rem">
+        <button class="btn btn-primary" onclick="window.location.reload()">🔁 Restart</button>
+      </div>
+    `;
+  }
 }
+
+export default GameEngine;
