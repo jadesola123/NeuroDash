@@ -1,33 +1,83 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>NeuroDash</title>
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroDash - Voice-Controlled Cognitive Training</title>
+    <link rel="stylesheet" href="src/css/main.css">
+    <link rel="stylesheet" href="src/css/responsive.css">
 </head>
 <body>
-  <h1>NeuroDash</h1>
+    <div id="app">
+        <header class="hero">
+            <h1 class="logo">🧠 NeuroDash</h1>
+            <p class="tagline">Voice-Controlled Cognitive Training for Everyone</p>
+        </header>
 
-  <div id="game">
-    <div id="color-box"></div>
-    <p id="instruction">Say the color name</p>
-    <div id="stats">
-      <p>Reaction Time: <span id="reaction">–</span></p>
-      <p>Lives: <span id="lives">❤️❤️❤️</span></p>
-      <p>Score: <span id="score">0</span></p>
+        <main class="game-container">
+            <div class="status-bar">
+                <div class="latency-display">
+                    <span class="latency-label">Latency:</span>
+                    <span id="latency-value">--ms</span>
+                </div>
+                <div class="mic-status" id="mic-status">🎤</div>
+            </div>
+
+            <div class="game-area" id="game-area">
+                <div class="challenge-container" id="challenge-container">
+                    <!-- Dynamic challenge content goes here -->
+                </div>
+                
+                <div class="voice-instruction" id="voice-instruction">
+                    Click "Start Training" to begin
+                </div>
+            </div>
+
+            <div class="stats-panel">
+                <div class="stat">
+                    <span class="stat-value" id="avg-latency">--ms</span>
+                    <span class="stat-label">Avg Latency</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="accuracy">--%</span>
+                    <span class="stat-label">Accuracy</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="streak">0</span>
+                    <span class="stat-label">Streak</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="difficulty">Easy</span>
+                    <span class="stat-label">Level</span>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button id="start-btn" class="btn btn-primary">🎮 Start Training</button>
+                <button id="challenge-btn" class="btn btn-secondary">🔄 Next Challenge</button>
+                <button id="difficulty-btn" class="btn btn-secondary">⚡ Difficulty</button>
+                <button id="reset-btn" class="btn btn-secondary">🔄 Reset Stats</button>
+            </div>
+        </main>
+
+        <footer class="features">
+            <div class="accessibility-badges">
+                <span class="badge">🎯 ADHD Friendly</span>
+                <span class="badge">🧓 Senior Accessible</span>
+                <span class="badge">🏥 Rehab Support</span>
+                <span class="badge">🎮 Hands-Free</span>
+            </div>
+        </footer>
     </div>
-    <label for="difficulty">Difficulty:</label>
-    <select id="difficulty">
-      <option value="3000">Easy</option>
-      <option value="2000">Hard</option>
-      <option value="1000">Insane</option>
-    </select>
-    <button id="start-btn">Start Game</button>
-  </div>
 
-  <script src="config.js"></script>
-  <script src="app.js"></script>
+    <!-- Scripts -->
+    <script src="https://unpkg.com/livekit-client@1.15.0/dist/livekit-client.umd.js"></script>
+    <script src="src/js/voice-controller.js"></script>
+    <script src="src/js/challenges/color-challenge.js"></script>
+    <script src="src/js/challenges/memory-challenge.js"></script>
+    <script src="src/js/challenges/stroop-challenge.js"></script>
+    <script src="src/js/game-engine.js"></script>
+    <script src="src/js/analytics.js"></script>
+    <script src="src/js/app.js"></script>
 </body>
 </html>
-
