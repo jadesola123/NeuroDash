@@ -274,3 +274,120 @@ body {
     .color-box { width: 150px; height: 150px; }
     .controls { flex-direction: column; }
 }
+
+/* --- Responsive Styles --- */
+/* Responsive styles for NeuroDash */
+
+@media (max-width: 1024px) {
+  .game-area {
+    min-height: 300px;
+  }
+
+  .color-box {
+    width: 160px;
+    height: 160px;
+    font-size: 1.5rem;
+  }
+
+  .stat-value {
+    font-size: 1.5rem;
+  }
+
+  .controls {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .logo {
+    font-size: 2.2rem;
+  }
+
+  .tagline {
+    font-size: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .color-box {
+    width: 140px;
+    height: 140px;
+    font-size: 1.2rem;
+  }
+
+  .latency-display {
+    font-size: 0.9rem;
+    padding: 0.3rem 0.8rem;
+  }
+
+  .stat {
+    flex: 1 1 50%;
+    margin-bottom: 1rem;
+  }
+
+  .controls button {
+    padding: 0.8rem 1.5rem;
+    font-size: 0.9rem;
+  }
+
+  .mic-status {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .game-area {
+    border-width: 2px;
+  }
+
+  .color-box {
+    width: 120px;
+    height: 120px;
+    font-size: 1rem;
+  }
+
+  .voice-instruction {
+    font-size: 1rem;
+    padding: 0.5rem;
+  }
+
+  .controls {
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .controls button {
+    width: 100%;
+    font-size: 0.85rem;
+  }
+
+  .features {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+/* --- Additional Corrections --- */
+/* Ensure full height layout */
+html, body {
+    height: 100%;
+}
+
+/* Improve contrast for feature section */
+.feature {
+    background: rgba(0, 0, 0, 0.1);
+    color: white;
+}
+
+/* Mobile layout improvements */
+@media (max-width: 480px) {
+    .demo-container {
+        padding: 1rem;
+    }
+    .stats-panel {
+        flex-direction: column;
+        gap: 1rem;
+    }
+}
