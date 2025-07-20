@@ -1,47 +1,40 @@
-/**
- * GameAnalytics - Tracks performance metrics
- * - Average Latency
- * - Accuracy
- * - Current Streak
- * - Total Attempts
- */
+// analytics.js
 
-class GameAnalytics {
-    constructor() {
-        this.reset();
-    }
+class Analytics {
+  constructor() {
+    this.results = [];
+  }
 
-    recordResponse(transcription, correct, latency) {
-        this.totalAttempts++;
-        if (correct) {
-            this.correctCount++;
-            this.currentStreak++;
-        } else {
-            this.currentStreak = 0;
-        }
+  recordResult({ challengeType, correct, latency }) {
+    this.results.push({ challengeType, correct, latency });
+  }
 
-        this.totalLatency += latency;
-    }
+  getAverageLatency() {
+    if (this.results.length === 0) return 0;
+    const total = this.results.reduce((acc, r) => acc + r.latency, 0);
+    return Math.round(total / this.results.length);
+  }
 
-    getStats() {
-        const averageLatency = this.totalAttempts > 0
-            ? this.totalLatency / this.totalAttempts
-            : 0;
-        const accuracy = this.totalAttempts > 0
-            ? (this.correctCount / this.totalAttempts) * 100
-            : 0;
+  getCorrectCount() {
+    return this.results.filter(r => r.correct).length;
+  }
 
-        return {
-            averageLatency,
-            accuracy,
-            currentStreak: this.currentStreak
-        };
-    }
+  getTotalCount() {
+    return this.results.length;
+  }
 
-    reset() {
-        this.totalAttempts = 0;
-        this.correctCount = 0;
-        this.totalLatency = 0;
-        this.currentStreak = 0;
-    }
+  getStats() {
+    return {
+      total: this.getTotalCount(),
+      correct: this.getCorrectCount(),
+      avgLatency: this.getAverageLatency()
+    };
+  }
+
+  reset() {
+    this.results = [];
+  }
 }
+
+window.analytics = new Analytics();
+export default window.analytics;
