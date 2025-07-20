@@ -1,160 +1,96 @@
-/**
- * NeuroDash - Main Application Controller
- * Coordinates all game components and manages application state
- */
+// app.js
 
-class NeuroDashApp {
-    constructor() {
-        this.gameEngine = null;
-        this.voiceController = null;
-        this.analytics = null;
-        this.isTraining = false;
+import ColorChallenge from './challenges/color-challenge.js';
+import MemoryChallenge from './challenges/memory-challenge.js';
+import StroopChallenge from './challenges/stroop-challenge.js';
+import VoiceController from './voice-controller.js';
 
-        this.init();
+class GameEngine {
+  constructor() {
+    this.currentChallenge = null;
+    this.voiceController = new VoiceController();
+    this.challengeMap = {
+      color: new ColorChallenge(),
+      memory: new MemoryChallenge(),
+      stroop: new StroopChallenge()
+    };
+    this.activeChallengeKey = 'color';
+    this.stats = {
+      total: 0,
+      correct: 0,
+      averageLatency: 0
+    };
+  }
+
+  init() {
+    this.setupEventListeners();
+    this.voiceController.onFinalTranscription = this.handleVoiceInput.bind(this);
+    this.startChallenge();
+  }
+
+  setupEventListeners() {
+    document.getElementById('btn-color').addEventListener('click', () => this.switchChallenge('color'));
+    document.getElementById('btn-memory').addEventListener('click', () => this.switchChallenge('memory'));
+    document.getElementById('btn-stroop').addEventListener('click', () => this.switchChallenge('stroop'));
+
+    document.getElementById('difficulty').addEventListener('change', (e) => {
+      const level = e.target.value;
+      if (this.currentChallenge?.setDifficulty) {
+        this.currentChallenge.setDifficulty(level);
+      }
+    });
+  }
+
+  switchChallenge(key) {
+    if (this.challengeMap[key]) {
+      this.activeChallengeKey = key;
+      this.startChallenge();
+    }
+  }
+
+  startChallenge() {
+    if (this.currentChallenge?.stop) {
+      this.currentChallenge.stop();
+    }
+    this.currentChallenge = this.challengeMap[this.activeChallengeKey];
+    this.stats = { total: 0, correct: 0, averageLatency: 0 };
+    this.currentChallenge.setDifficulty(document.getElementById('difficulty').value);
+    this.currentChallenge.start();
+    this.voiceController.connect();
+  }
+
+  handleVoiceInput(transcript, confidence) {
+    if (!this.currentChallenge) return;
+    const result = this.currentChallenge.checkAnswer(transcript, confidence);
+    if (!result) return;
+
+    this.stats.total++;
+    if (result.correct) {
+      this.stats.correct++;
     }
 
-    async init() {
-        try {
-            // Initialize modules
-            this.analytics = new GameAnalytics();
-            this.gameEngine = new GameEngine(this.analytics);
-            this.voiceController = new VoiceController({
-                onTranscription: this.handleVoiceCommand.bind(this),
-                onLatencyUpdate: this.updateLatencyDisplay.bind(this),
-                onError: this.handleVoiceError.bind(this)
-            });
+    // Update average latency
+    this.stats.averageLatency = Math.round(((this.stats.averageLatency * (this.stats.total - 1)) + result.latency) / this.stats.total);
+    this.renderStats();
+  }
 
-            // Setup event listeners
-            this.setupEventListeners();
+  renderStats() {
+    document.getElementById('stat-total').innerText = this.stats.total;
+    document.getElementById('stat-correct').innerText = this.stats.correct;
+    document.getElementById('stat-latency').innerText = `${this.stats.averageLatency}ms`;
+  }
 
-            // Initialize UI
-            this.updateUI();
-
-            console.log('NeuroDash initialized');
-        } catch (error) {
-            console.error('Initialization failed:', error);
-            this.showError('Initialization failed. Check your internet connection.');
-        }
-    }
-
-    setupEventListeners() {
-        document.getElementById('start-btn').addEventListener('click', () => this.toggleTraining());
-        document.getElementById('challenge-btn').addEventListener('click', () => this.nextChallenge());
-        document.getElementById('difficulty-btn').addEventListener('click', () => this.adjustDifficulty());
-        document.getElementById('reset-btn').addEventListener('click', () => this.resetStats());
-    }
-
-    async toggleTraining() {
-        const startBtn = document.getElementById('start-btn');
-
-        if (!this.isTraining) {
-            try {
-                await this.voiceController.start();
-                this.gameEngine.start();
-                this.isTraining = true;
-                startBtn.textContent = '⏸️ Pause Training';
-                startBtn.classList.add('active');
-                this.updateMicStatus('active');
-            } catch (error) {
-                console.error('Start failed:', error);
-                this.showError('Failed to start voice recognition. Check mic permissions.');
-            }
-        } else {
-            this.voiceController.stop();
-            this.gameEngine.stop();
-            this.isTraining = false;
-            startBtn.textContent = '🎮 Start Training';
-            startBtn.classList.remove('active');
-            this.updateMicStatus('inactive');
-        }
-    }
-
-    handleVoiceCommand(transcription, confidence, processingTime) {
-        if (!this.isTraining) return;
-
-        const startTime = Date.now();
-        const result = this.gameEngine.processVoiceCommand(transcription, confidence);
-        const totalLatency = Date.now() - startTime + processingTime;
-
-        // 🔊 Play feedback sounds
-        const correctSound = new Audio('src/assets/sounds/correct.mp3');
-        const wrongSound = new Audio('src/assets/sounds/wrong.mp3');
-        result.correct ? correctSound.play() : wrongSound.play();
-
-        // 🧠 Show debug feedback
-        const instructionEl = document.getElementById('voice-instruction');
-        instructionEl.innerHTML = `
-            🗣️ You said: <strong>${transcription}</strong><br>
-            ✅ Correct? <strong>${result.correct ? 'Yes' : 'No'}</strong><br>
-            🕒 Latency: <strong>${totalLatency}ms</strong>
-        `;
-        instructionEl.className = result.correct ? 'voice-instruction correct' : 'voice-instruction incorrect';
-
-        // 📊 Update metrics
-        this.analytics.recordResponse(transcription, result.correct, totalLatency);
-        this.updateLatencyDisplay(totalLatency);
-        this.updateStats();
-
-        // ⏳ Reset message
-        setTimeout(() => {
-            instructionEl.className = 'voice-instruction';
-            instructionEl.innerText = result.correct
-                ? result.nextInstruction
-                : result.instruction;
-        }, 1500);
-    }
-
-    updateLatencyDisplay(latency) {
-        const el = document.getElementById('latency-value');
-        el.textContent = `${Math.round(latency)}ms`;
-        el.className = latency < 300 ? 'excellent' : latency < 500 ? 'good' : 'slow';
-    }
-
-    updateStats() {
-        const stats = this.analytics.getStats();
-        document.getElementById('avg-latency').textContent = `${Math.round(stats.averageLatency)}ms`;
-        document.getElementById('accuracy').textContent = `${Math.round(stats.accuracy)}%`;
-        document.getElementById('streak').textContent = stats.currentStreak;
-    }
-
-    nextChallenge() {
-        this.gameEngine.nextChallenge();
-        this.updateUI();
-    }
-
-    adjustDifficulty() {
-        this.gameEngine.adjustDifficulty();
-        document.getElementById('difficulty').textContent = this.gameEngine.getCurrentDifficulty();
-    }
-
-    resetStats() {
-        this.analytics.reset();
-        this.updateStats();
-    }
-
-    updateMicStatus(status) {
-        const micStatus = document.getElementById('mic-status');
-        micStatus.className = `mic-status ${status}`;
-    }
-
-    updateUI() {
-        const currentChallenge = this.gameEngine.getCurrentChallenge();
-        if (currentChallenge) currentChallenge.render();
-    }
-
-    handleVoiceError(error) {
-        console.error('Voice error:', error);
-        this.showError('Voice recognition error. Please try again.');
-    }
-
-    showError(message) {
-        const instruction = document.getElementById('voice-instruction');
-        instruction.innerHTML = `⚠️ ${message}`;
-        instruction.className = 'voice-instruction error';
-    }
+  endSession() {
+    const container = document.getElementById('challenge-container');
+    container.innerHTML = `
+      <div class="challenge-title">🎉 Session Complete</div>
+      <div class="voice-instruction">You answered ${this.stats.correct} out of ${this.stats.total} correctly!</div>
+      <div class="latency-display">Average Latency: ${this.stats.averageLatency}ms</div>
+    `;
+    this.voiceController.disconnect();
+  }
 }
 
-// Launch on DOM load
-document.addEventListener('DOMContentLoaded', () => {
-    window.neuroDashApp = new NeuroDashApp();
-});
+const engine = new GameEngine();
+window.engine = engine;
+window.addEventListener('DOMContentLoaded', () => engine.init());
