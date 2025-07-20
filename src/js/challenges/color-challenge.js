@@ -1,3 +1,5 @@
+// File: src/js/challenges/color-challenge.js
+
 /**
  * Color Challenge - Say the color you see
  */
@@ -11,7 +13,7 @@ class ColorChallenge {
         };
         this.currentColor = null;
         this.difficulty = 'easy';
-        this.timeLimit = 5000; // 5 seconds
+        this.timeLimit = 5000; // default to 5 seconds
         this.timer = null;
     }
 
@@ -48,7 +50,7 @@ class ColorChallenge {
     checkAnswer(transcription, confidence) {
         const userAnswer = transcription.toLowerCase().trim();
         const correct = userAnswer === this.currentColor || userAnswer.includes(this.currentColor);
-        
+
         if (correct) {
             this.stop();
             return {
