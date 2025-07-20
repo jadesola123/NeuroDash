@@ -1,6 +1,9 @@
 /**
- * GameAnalytics - Tracks player performance and feedback
- * Includes latency, accuracy, streaks, and more
+ * GameAnalytics - Tracks performance metrics
+ * - Average Latency
+ * - Accuracy
+ * - Current Streak
+ * - Total Attempts
  */
 
 class GameAnalytics {
@@ -8,48 +11,37 @@ class GameAnalytics {
         this.reset();
     }
 
-    reset() {
-        this.totalAttempts = 0;
-        this.correctAttempts = 0;
-        this.latencies = [];
-        this.currentStreak = 0;
-        this.bestStreak = 0;
-    }
-
     recordResponse(transcription, correct, latency) {
         this.totalAttempts++;
         if (correct) {
-            this.correctAttempts++;
+            this.correctCount++;
             this.currentStreak++;
-            if (this.currentStreak > this.bestStreak) {
-                this.bestStreak = this.currentStreak;
-            }
         } else {
             this.currentStreak = 0;
         }
-        this.latencies.push(latency);
+
+        this.totalLatency += latency;
     }
 
     getStats() {
-        const total = this.totalAttempts;
-        const correct = this.correctAttempts;
-        const avgLatency =
-            this.latencies.length > 0
-                ? this.latencies.reduce((a, b) => a + b, 0) / this.latencies.length
-                : 0;
+        const averageLatency = this.totalAttempts > 0
+            ? this.totalLatency / this.totalAttempts
+            : 0;
+        const accuracy = this.totalAttempts > 0
+            ? (this.correctCount / this.totalAttempts) * 100
+            : 0;
 
         return {
-            totalAttempts: total,
-            correctAttempts: correct,
-            accuracy: total > 0 ? (correct / total) * 100 : 0,
-            averageLatency: avgLatency,
-            currentStreak: this.currentStreak,
-            bestStreak: this.bestStreak,
+            averageLatency,
+            accuracy,
+            currentStreak: this.currentStreak
         };
     }
-}
 
-// Export for use in app
-if (typeof module !== 'undefined') {
-    module.exports = GameAnalytics;
+    reset() {
+        this.totalAttempts = 0;
+        this.correctCount = 0;
+        this.totalLatency = 0;
+        this.currentStreak = 0;
+    }
 }
