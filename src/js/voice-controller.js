@@ -13,14 +13,13 @@ class VoiceController {
         this.audioStream = null;
         this.isRecording = false;
         
-        // Performance tracking
+        // Latency tracking
         this.startTime = null;
         this.latencyBuffer = [];
     }
 
     async start() {
         try {
-            // Get microphone access
             this.audioStream = await navigator.mediaDevices.getUserMedia({
                 audio: {
                     sampleRate: 16000,
@@ -30,15 +29,11 @@ class VoiceController {
                 }
             });
 
-            // Initialize AssemblyAI WebSocket
             await this.initializeWebSocket();
-            
-            // Start audio recording
             this.startAudioCapture();
-            
-            console.log('Voice controller started successfully');
+            console.log('VoiceController started');
         } catch (error) {
-            console.error('Failed to start voice controller:', error);
+            console.error('VoiceController start error:', error);
             this.onError(error);
             throw error;
         }
@@ -46,28 +41,26 @@ class VoiceController {
 
     async initializeWebSocket() {
         return new Promise((resolve, reject) => {
-            // Note: In production, you'd get this token from your backend
-            const websocketUrl = `wss://api.assemblyai.com/v2/realtime/ws?sample_rate=16000&token=${this.getApiToken()}`;
-            
-            this.websocket = new WebSocket(websocketUrl);
-            
+            const url = `wss://api.assemblyai.com/v2/realtime/ws?sample_rate=16000&token=${this.getApiToken()}`;
+            this.websocket = new WebSocket(url);
+
             this.websocket.onopen = () => {
-                console.log('AssemblyAI WebSocket connected');
+                console.log('WebSocket connected');
                 resolve();
             };
-            
+
             this.websocket.onmessage = (message) => {
                 const data = JSON.parse(message.data);
                 this.handleTranscription(data);
             };
-            
+
             this.websocket.onerror = (error) => {
                 console.error('WebSocket error:', error);
                 reject(error);
             };
-            
+
             this.websocket.onclose = () => {
-                console.log('AssemblyAI WebSocket disconnected');
+                console.log('WebSocket closed');
             };
         });
     }
@@ -80,7 +73,6 @@ class VoiceController {
 
         this.mediaRecorder.ondataavailable = (event) => {
             if (event.data.size > 0 && this.websocket?.readyState === WebSocket.OPEN) {
-                // Convert to base64 and send to AssemblyAI
                 const reader = new FileReader();
                 reader.onload = () => {
                     const base64Audio = reader.result.split(',')[1];
@@ -92,7 +84,6 @@ class VoiceController {
             }
         };
 
-        // Start recording in small chunks for real-time processing
         this.mediaRecorder.start(250); // 250ms chunks
         this.isRecording = true;
         this.startTime = Date.now();
@@ -101,18 +92,13 @@ class VoiceController {
     handleTranscription(data) {
         if (data.message_type === 'FinalTranscript' && data.text) {
             const processingTime = Date.now() - this.startTime;
-            
-            // Filter out common filler words and normalize
-            const cleanedText = this.cleanTranscription(data.text);
-            
-            if (cleanedText.length > 0) {
-                this.onTranscription(cleanedText, data.confidence, processingTime);
-                
-                // Track latency for performance analysis
+
+            const cleaned = this.cleanTranscription(data.text);
+            if (cleaned.length > 0) {
+                this.onTranscription(cleaned, data.confidence, processingTime);
                 this.trackLatency(processingTime);
             }
-            
-            // Reset timing for next command
+
             this.startTime = Date.now();
         }
     }
@@ -120,23 +106,18 @@ class VoiceController {
     cleanTranscription(text) {
         return text
             .toLowerCase()
-            .trim()
-            .replace(/[^\w\s]/g, '') // Remove punctuation
-            .replace(/\b(um|uh|er|ah)\b/g, '') // Remove filler words
-            .replace(/\s+/g, ' ') // Normalize spaces
+            .replace(/[^\w\s]/g, '')
+            .replace(/\b(um|uh|er|ah)\b/g, '')
+            .replace(/\s+/g, ' ')
             .trim();
     }
 
     trackLatency(latency) {
         this.latencyBuffer.push(latency);
-        
-        // Keep only recent measurements for moving average
-        if (this.latencyBuffer.length > 10) {
-            this.latencyBuffer.shift();
-        }
-        
-        const averageLatency = this.latencyBuffer.reduce((a, b) => a + b, 0) / this.latencyBuffer.length;
-        this.onLatencyUpdate(averageLatency);
+        if (this.latencyBuffer.length > 10) this.latencyBuffer.shift();
+
+        const avg = this.latencyBuffer.reduce((a, b) => a + b, 0) / this.latencyBuffer.length;
+        this.onLatencyUpdate(avg);
     }
 
     stop() {
@@ -144,23 +125,22 @@ class VoiceController {
             this.mediaRecorder.stop();
             this.isRecording = false;
         }
-        
+
         if (this.audioStream) {
             this.audioStream.getTracks().forEach(track => track.stop());
             this.audioStream = null;
         }
-        
+
         if (this.websocket) {
             this.websocket.close();
             this.websocket = null;
         }
-        
-        console.log('Voice controller stopped');
+
+        console.log('VoiceController stopped');
     }
 
     getApiToken() {
-        // In production, this should be fetched from your backend
-        // For demo purposes, you'd need to implement a token endpoint
-        return 'YOUR_ASSEMBLYAI_TOKEN_HERE';
+        // Inject your key here directly (since .env won't work on GitHub Pages)
+        return '061a7f07085b47bbb22ca1941bd2b38e';
     }
 }
