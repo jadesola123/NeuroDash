@@ -2,78 +2,75 @@
 
 class ColorChallenge {
   constructor() {
-    this.colors = ['RED', 'BLUE', 'GREEN', 'YELLOW', 'PURPLE'];
-    this.colorCodes = {
-      RED: '#ff4757',
-      BLUE: '#3742fa',
-      GREEN: '#2ed573',
-      YELLOW: '#ffa502',
-      PURPLE: '#a55eea'
-    };
-    this.currentColor = null;
-    this.promptStartTime = null;
-    this.correctCount = 0;
-    this.promptLimit = 10;
-    this.userResponses = [];
+    this.colors = ['red', 'blue', 'green', 'yellow'];
+    this.currentColor = '';
+    this.difficulty = 'easy';
+    this.timeLimit = 5000;
+    this.promptCount = 0;
+    this.maxPrompts = 10;
+    this.startTime = null;
+  }
+
+  setDifficulty(level) {
+    this.difficulty = level;
+    const timeMap = { easy: 5000, medium: 4000, hard: 3000, insane: 2000 };
+    this.timeLimit = timeMap[level] || 5000;
+  }
+
+  generateColor() {
+    const index = Math.floor(Math.random() * this.colors.length);
+    this.currentColor = this.colors[index];
   }
 
   start() {
-    this.correctCount = 0;
-    this.userResponses = [];
-    this.nextPrompt();
+    this.promptCount = 0;
+    this.renderNewColor();
   }
 
   stop() {
     clearTimeout(this.timer);
   }
 
-  nextPrompt() {
-    if (this.correctCount >= this.promptLimit) {
-      window.gameEngine.endSession();
-      return;
-    }
-    this.currentColor = this.colors[Math.floor(Math.random() * this.colors.length)];
-    this.promptStartTime = performance.now();
-    this.render();
-  }
+  renderNewColor() {
+    this.generateColor();
+    this.startTime = performance.now();
 
-  render() {
     const container = document.getElementById('challenge-container');
     container.innerHTML = `
       <div class="challenge-title">Color Challenge</div>
-      <div class="color-box" style="background:${this.colorCodes[this.currentColor]}">${this.currentColor}</div>
+      <div class="color-box" style="background:${this.currentColor}">${this.currentColor.toUpperCase()}</div>
+      <div class="voice-instruction" id="voice-instruction">🗣️ Say: <strong>${this.currentColor}</strong></div>
+      <div class="latency-display">Waiting for your voice...</div>
     `;
-    const instruction = document.getElementById('voice-instruction');
-    instruction.innerHTML = `🗣️ Say "${this.currentColor}"`;
   }
 
-  checkAnswer(transcript) {
-    const spoken = transcript.trim().toUpperCase();
-    const responseTime = Math.floor(performance.now() - this.promptStartTime);
-    const isCorrect = spoken === this.currentColor;
-    this.userResponses.push({ spoken, expected: this.currentColor, responseTime, correct: isCorrect });
+  checkAnswer(transcript, confidence) {
+    const latency = Math.round(performance.now() - this.startTime);
+    const normalized = transcript.trim().toLowerCase();
 
-    const latencyDisplay = document.getElementById('latency-display');
-    if (latencyDisplay) {
-      latencyDisplay.textContent = `${responseTime}ms`;
-    }
+    const latencyDisplay = document.querySelector('.latency-display');
+    const instruction = document.getElementById('voice-instruction');
 
-    const feedback = document.getElementById('feedback');
-    if (isCorrect) {
+    latencyDisplay.innerHTML = `Response Time: <strong>${latency}ms</strong><br>Transcript: "${transcript}"`;
+
+    if (normalized.includes(this.currentColor)) {
       new Audio('src/assets/sounds/correct.mp3').play();
-      feedback.innerHTML = `✅ Correct! (${spoken})`;
-      this.correctCount++;
-      setTimeout(() => this.nextPrompt(), 1000);
+      this.promptCount++;
+      instruction.innerHTML = '✅ Correct! Get ready for the next one...';
+
+      if (this.promptCount >= this.maxPrompts) {
+        window.engine.endSession();
+      } else {
+        setTimeout(() => this.renderNewColor(), 2000);
+      }
+
+      return { correct: true, latency };
     } else {
       new Audio('src/assets/sounds/wrong.mp3').play();
-      feedback.innerHTML = `❌ Wrong! You said "${spoken}" instead of "${this.currentColor}"`;
+      instruction.innerHTML = `❌ Incorrect. Try again: Say <strong>${this.currentColor}</strong>`;
+      return { correct: false, latency };
     }
-  }
-
-  setDifficulty(level) {
-    // Future use if needed
   }
 }
 
-window.ColorChallenge = ColorChallenge;
 export default ColorChallenge;
