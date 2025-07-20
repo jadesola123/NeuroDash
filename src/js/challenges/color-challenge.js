@@ -1,83 +1,79 @@
-/**
- * Color Challenge - Say the color you see
- */
+// color-challenge.js
 
 class ColorChallenge {
-    constructor() {
-        this.colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange'];
-        this.colorCodes = {
-            'red': '#ff4757', 'blue': '#3742fa', 'green': '#2ed573',
-            'yellow': '#ffa502', 'purple': '#a55eea', 'orange': '#ff6348'
-        };
-        this.currentColor = null;
-        this.difficulty = 'easy';
-        this.timeLimit = 5000; // default time
-        this.timer = null;
+  constructor() {
+    this.colors = ['RED', 'BLUE', 'GREEN', 'YELLOW', 'PURPLE'];
+    this.colorCodes = {
+      RED: '#ff4757',
+      BLUE: '#3742fa',
+      GREEN: '#2ed573',
+      YELLOW: '#ffa502',
+      PURPLE: '#a55eea'
+    };
+    this.currentColor = null;
+    this.promptStartTime = null;
+    this.correctCount = 0;
+    this.promptLimit = 10;
+    this.userResponses = [];
+  }
+
+  start() {
+    this.correctCount = 0;
+    this.userResponses = [];
+    this.nextPrompt();
+  }
+
+  stop() {
+    clearTimeout(this.timer);
+  }
+
+  nextPrompt() {
+    if (this.correctCount >= this.promptLimit) {
+      window.gameEngine.endSession();
+      return;
+    }
+    this.currentColor = this.colors[Math.floor(Math.random() * this.colors.length)];
+    this.promptStartTime = performance.now();
+    this.render();
+  }
+
+  render() {
+    const container = document.getElementById('challenge-container');
+    container.innerHTML = `
+      <div class="challenge-title">Color Challenge</div>
+      <div class="color-box" style="background:${this.colorCodes[this.currentColor]}">${this.currentColor}</div>
+    `;
+    const instruction = document.getElementById('voice-instruction');
+    instruction.innerHTML = `🗣️ Say "${this.currentColor}"`;
+  }
+
+  checkAnswer(transcript) {
+    const spoken = transcript.trim().toUpperCase();
+    const responseTime = Math.floor(performance.now() - this.promptStartTime);
+    const isCorrect = spoken === this.currentColor;
+    this.userResponses.push({ spoken, expected: this.currentColor, responseTime, correct: isCorrect });
+
+    const latencyDisplay = document.getElementById('latency-display');
+    if (latencyDisplay) {
+      latencyDisplay.textContent = `${responseTime}ms`;
     }
 
-    start() {
-        this.generateNewColor();
-        this.render();
-        this.startTimer();
+    const feedback = document.getElementById('feedback');
+    if (isCorrect) {
+      new Audio('src/assets/sounds/correct.mp3').play();
+      feedback.innerHTML = `✅ Correct! (${spoken})`;
+      this.correctCount++;
+      setTimeout(() => this.nextPrompt(), 1000);
+    } else {
+      new Audio('src/assets/sounds/wrong.mp3').play();
+      feedback.innerHTML = `❌ Wrong! You said "${spoken}" instead of "${this.currentColor}"`;
     }
+  }
 
-    stop() {
-        if (this.timer) {
-            clearTimeout(this.timer);
-            this.timer = null;
-        }
-    }
-
-    generateNewColor() {
-        this.currentColor = this.colors[Math.floor(Math.random() * this.colors.length)];
-    }
-
-    render() {
-        const container = document.getElementById('challenge-container');
-        container.innerHTML = `
-            <div class="challenge-title">Color Recognition Challenge</div>
-            <div class="color-box" style="background-color: ${this.colorCodes[this.currentColor]}">
-                ${this.difficulty === 'easy' ? this.currentColor.toUpperCase() : ''}
-            </div>
-        `;
-
-        const instruction = document.getElementById('voice-instruction');
-        instruction.innerHTML = `🗣️ Say "${this.currentColor.toUpperCase()}!" out loud`;
-    }
-
-    checkAnswer(transcription, confidence) {
-        const userAnswer = transcription.toLowerCase().trim();
-        const correct = userAnswer === this.currentColor || userAnswer.includes(this.currentColor);
-
-        if (correct) {
-            this.stop();
-            return {
-                correct: true,
-                nextInstruction: 'Great job! Next challenge coming up...'
-            };
-        } else {
-            return {
-                correct: false,
-                instruction: `Say "${this.currentColor.toUpperCase()}" - you said "${transcription}"`
-            };
-        }
-    }
-
-    setDifficulty(level) {
-        this.difficulty = level;
-        const timeMap = { easy: 5000, medium: 3000, hard: 2000, insane: 1000 };
-        this.timeLimit = timeMap[level] || 5000;
-    }
-
-    startTimer() {
-        this.timer = setTimeout(() => {
-            this.generateNewColor();
-            this.render();
-            this.startTimer();
-        }, this.timeLimit);
-    }
+  setDifficulty(level) {
+    // Future use if needed
+  }
 }
 
-if (typeof module !== 'undefined') {
-    module.exports = ColorChallenge;
-}
+window.ColorChallenge = ColorChallenge;
+export default ColorChallenge;
