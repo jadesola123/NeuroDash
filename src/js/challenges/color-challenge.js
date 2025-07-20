@@ -1,5 +1,3 @@
-// File: src/js/challenges/color-challenge.js
-
 /**
  * Color Challenge - Say the color you see
  */
@@ -13,7 +11,7 @@ class ColorChallenge {
         };
         this.currentColor = null;
         this.difficulty = 'easy';
-        this.timeLimit = 5000; // default to 5 seconds
+        this.timeLimit = 5000; // default time
         this.timer = null;
     }
 
@@ -78,4 +76,8 @@ class ColorChallenge {
             this.startTimer();
         }, this.timeLimit);
     }
+}
+
+if (typeof module !== 'undefined') {
+    module.exports = ColorChallenge;
 }
