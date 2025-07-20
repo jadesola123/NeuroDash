@@ -63,9 +63,8 @@ class MemoryChallenge {
     latencyDisplay.innerHTML = `Response Time: <strong>${latency}ms</strong>`;
 
     if (isCorrect) {
-      new Audio('/src/assets/sounds/correct.mp3').play();
+      new Audio('src/assets/sounds/correct.mp3').play();
       this.promptCount++;
-
       instruction.innerHTML = '✅ Correct! Get ready for the next one...';
 
       if (this.promptCount >= this.maxPrompts) {
@@ -76,7 +75,7 @@ class MemoryChallenge {
 
       return { correct: true, latency };
     } else {
-      new Audio('/src/assets/sounds/wrong.mp3').play();
+      new Audio('src/assets/sounds/wrong.mp3').play();
       instruction.innerHTML = `❌ Incorrect. Try again: ${this.sequence.join(' ')}`;
       return { correct: false, latency };
     }
