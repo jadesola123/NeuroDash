@@ -1,100 +1,103 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NeuroDash - Voice-Controlled Brain Training</title>
-    <link rel="stylesheet" href="src/css/main.css" />
-    <link rel="stylesheet" href="src/css/responsive.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="NeuroDash – A voice-controlled cognitive training game for accessibility and recovery. Built with AssemblyAI." />
+  <title>NeuroDash - Voice-Controlled Brain Training</title>
+  <link rel="stylesheet" href="./src/css/main.css" />
+  <link rel="stylesheet" href="./src/css/responsive.css" />
+  <link rel="icon" href="./src/assets/favicon.ico" />
 </head>
 <body>
-    <div class="hero">
-        <div class="logo">
-            <span class="brain-icon">🧠</span> NeuroDash
-        </div>
-        <div class="tagline">
-            Voice-Controlled Cognitive Training for Everyone
-        </div>
-
-        <div class="demo-container">
-            <div class="game-area">
-                <div class="mic-status" id="mic-status">🎤</div>
-                <div class="game-challenge" id="challenge-container">
-                    <!-- Dynamic game content will be rendered here -->
-                </div>
-                <div class="voice-instruction" id="voice-instruction">
-                    🗣️ Click "Start Training" to begin
-                </div>
-                <div class="latency-display">
-                    Response Time: <span id="latency-value">--ms</span>
-                </div>
-            </div>
-
-            <div class="stats-panel">
-                <div class="stat">
-                    <div class="stat-value" id="avg-latency">--ms</div>
-                    <div class="stat-label">Avg Latency</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value" id="accuracy">--%</div>
-                    <div class="stat-label">Accuracy</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value" id="streak">0</div>
-                    <div class="stat-label">Streak</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value" id="difficulty">Easy</div>
-                    <div class="stat-label">Level</div>
-                </div>
-            </div>
-
-            <div class="controls">
-                <button class="btn btn-primary" id="start-btn">🎮 Start Training</button>
-                <button class="btn btn-secondary" id="challenge-btn">🔄 Next Challenge</button>
-                <button class="btn btn-secondary" id="difficulty-btn">⚡ Difficulty</button>
-                <button class="btn btn-secondary" id="reset-btn">🔄 Reset Stats</button>
-            </div>
-        </div>
-
-        <div class="features">
-            <div class="feature">
-                <div class="feature-icon">⚡</div>
-                <h3>Ultra-Low Latency</h3>
-                <p>Sub-300ms response times using AssemblyAI's Universal-Streaming</p>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">♿</div>
-                <h3>Accessibility First</h3>
-                <p>Voice-only controls for users with motor limitations</p>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">🧠</div>
-                <h3>Cognitive Training</h3>
-                <p>Memory, reaction speed, and focus exercises</p>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">📊</div>
-                <h3>Real-Time Metrics</h3>
-                <p>Live performance tracking and improvement analytics</p>
-            </div>
-        </div>
-
-        <div style="margin-top: 3rem;">
-            <div class="accessibility-badge">🎯 ADHD Friendly</div>
-            <div class="accessibility-badge">🧓 Senior Accessible</div>
-            <div class="accessibility-badge">🏥 Rehab Support</div>
-            <div class="accessibility-badge">🎮 Hands-Free Gaming</div>
-        </div>
+  <div class="hero">
+    <div class="logo">
+      <span class="brain-icon">🧠</span> NeuroDash
+    </div>
+    <div class="tagline">
+      Voice-Controlled Cognitive Training for Everyone
     </div>
 
-    <!-- JavaScript logic -->
-    <script src="src/js/voice-controller.js"></script>
-    <script src="src/js/challenges/color-challenge.js"></script>
-    <script src="src/js/challenges/memory-challenge.js"></script>
-    <script src="src/js/challenges/stroop-challenge.js"></script>
-    <script src="src/js/game-engine.js"></script>
-    <script src="src/js/analytics.js"></script>
-    <script src="src/js/app.js"></script>
+    <div class="demo-container">
+      <div class="game-area">
+        <div class="mic-status" id="mic-status">🎤</div>
+        <div class="game-challenge" id="challenge-container">
+          <!-- Dynamic game content will be rendered here -->
+        </div>
+        <div class="voice-instruction" id="voice-instruction">
+          🗣️ Click "Start Training" to begin
+        </div>
+        <div class="latency-display">
+          Response Time: <span id="latency-value">--ms</span>
+        </div>
+        <div class="feedback" id="feedback"></div>
+      </div>
+
+      <div class="stats-panel">
+        <div class="stat">
+          <div class="stat-value" id="avg-latency">--ms</div>
+          <div class="stat-label">Avg Latency</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="accuracy">--%</div>
+          <div class="stat-label">Accuracy</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="streak">0</div>
+          <div class="stat-label">Streak</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="difficulty">Easy</div>
+          <div class="stat-label">Level</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="btn btn-primary" id="start-btn">🎮 Start Training</button>
+        <button class="btn btn-secondary" id="challenge-btn">🔄 Next Challenge</button>
+        <button class="btn btn-secondary" id="difficulty-btn">⚡ Difficulty</button>
+        <button class="btn btn-secondary" id="reset-btn">🔄 Reset Stats</button>
+      </div>
+    </div>
+
+    <div class="features">
+      <div class="feature">
+        <div class="feature-icon">⚡</div>
+        <h3>Ultra-Low Latency</h3>
+        <p>Sub-300ms response times using AssemblyAI's Universal-Streaming</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">♿</div>
+        <h3>Accessibility First</h3>
+        <p>Voice-only controls for users with motor limitations</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🧠</div>
+        <h3>Cognitive Training</h3>
+        <p>Memory, reaction speed, and focus exercises</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">📊</div>
+        <h3>Real-Time Metrics</h3>
+        <p>Live performance tracking and improvement analytics</p>
+      </div>
+    </div>
+
+    <div style="margin-top: 3rem;">
+      <div class="accessibility-badge">🎯 ADHD Friendly</div>
+      <div class="accessibility-badge">🧓 Senior Accessible</div>
+      <div class="accessibility-badge">🏥 Rehab Support</div>
+      <div class="accessibility-badge">🎮 Hands-Free Gaming</div>
+    </div>
+  </div>
+
+  <!-- JavaScript logic -->
+  <script type="module" src="./src/js/voice-controller.js"></script>
+  <script type="module" src="./src/js/challenges/color-challenge.js"></script>
+  <script type="module" src="./src/js/challenges/memory-challenge.js"></script>
+  <script type="module" src="./src/js/challenges/stroop-challenge.js"></script>
+  <script type="module" src="./src/js/game-engine.js"></script>
+  <script type="module" src="./src/js/analytics.js"></script>
+  <script type="module" src="./src/js/app.js"></script>
 </body>
 </html>
