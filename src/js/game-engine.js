@@ -3,50 +3,75 @@
 import ColorChallenge from './challenges/color-challenge.js';
 import MemoryChallenge from './challenges/memory-challenge.js';
 import StroopChallenge from './challenges/stroop-challenge.js';
-import Analytics from './analytics.js';
+import analytics from './analytics.js';
 
 class GameEngine {
   constructor() {
-    this.challengeMap = {
+    this.challenges = {
       color: new ColorChallenge(),
       memory: new MemoryChallenge(),
-      stroop: new StroopChallenge()
+      stroop: new StroopChallenge(),
     };
-    this.currentChallengeKey = 'color';
-    this.analytics = new Analytics();
+    this.currentChallenge = null;
+    this.challengeKeys = Object.keys(this.challenges);
+    this.challengeIndex = 0;
+    this.voiceController = null;
   }
 
-  loadChallenge(type) {
-    if (this.challengeMap[type]) {
-      if (this.getCurrentChallenge()) {
-        this.getCurrentChallenge().stop();
+  init(voiceController) {
+    this.voiceController = voiceController;
+    this.voiceController.setTranscriptionCallback(this.handleTranscript.bind(this));
+  }
+
+  start() {
+    analytics.reset();
+    this.challengeIndex = 0;
+    this.launchNextChallenge();
+  }
+
+  launchNextChallenge() {
+    if (this.challengeIndex >= this.challengeKeys.length) {
+      this.endSession();
+      return;
+    }
+
+    const key = this.challengeKeys[this.challengeIndex];
+    this.currentChallenge = this.challenges[key];
+    this.currentChallenge.setDifficulty('easy');
+    this.currentChallenge.start();
+  }
+
+  handleTranscript(transcript) {
+    if (!this.currentChallenge || !transcript) return;
+
+    const result = this.currentChallenge.checkAnswer(transcript);
+
+    if (result && typeof result.correct === 'boolean') {
+      analytics.recordResult({
+        challengeType: this.challengeKeys[this.challengeIndex],
+        correct: result.correct,
+        latency: result.latency || 0
+      });
+
+      if (result.correct && this.currentChallenge.promptCount >= this.currentChallenge.maxPrompts) {
+        this.challengeIndex++;
+        setTimeout(() => this.launchNextChallenge(), 2000);
       }
-      this.currentChallengeKey = type;
-      this.analytics.reset();
     }
   }
 
-  getCurrentChallenge() {
-    return this.challengeMap[this.currentChallengeKey];
-  }
-
   endSession() {
+    const stats = analytics.getStats();
     const container = document.getElementById('challenge-container');
-    const summary = this.analytics.getSummary();
-
     container.innerHTML = `
-      <div class="challenge-title">🎉 Session Complete!</div>
-      <div class="summary-box">
-        <p>✅ Correct Answers: ${summary.correct}</p>
-        <p>❌ Incorrect Answers: ${summary.incorrect}</p>
-        <p>🎯 Accuracy: ${summary.accuracy}%</p>
-        <p>⚡ Avg Response Time: ${summary.averageLatency}ms</p>
-      </div>
-      <div style="margin-top: 1rem">
-        <button class="btn btn-primary" onclick="window.location.reload()">🔁 Restart</button>
+      <div class="challenge-title">Session Complete!</div>
+      <div class="voice-instruction">
+        ✅ Correct Answers: <strong>${stats.correct}/${stats.total}</strong><br/>
+        ⚡ Avg Latency: <strong>${stats.avgLatency}ms</strong>
       </div>
     `;
   }
 }
 
-export default GameEngine;
+window.engine = new GameEngine();
+export default window.engine;
