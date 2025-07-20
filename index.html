@@ -1,1 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NeuroDash</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>NeuroDash</h1>
+
+  <div id="game">
+    <div id="color-box"></div>
+    <p id="instruction">Say the color name</p>
+    <div id="stats">
+      <p>Reaction Time: <span id="reaction">–</span></p>
+      <p>Lives: <span id="lives">❤️❤️❤️</span></p>
+      <p>Score: <span id="score">0</span></p>
+    </div>
+    <label for="difficulty">Difficulty:</label>
+    <select id="difficulty">
+      <option value="3000">Easy</option>
+      <option value="2000">Hard</option>
+      <option value="1000">Insane</option>
+    </select>
+    <button id="start-btn">Start Game</button>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
 
