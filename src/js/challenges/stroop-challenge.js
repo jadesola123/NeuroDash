@@ -1,88 +1,90 @@
-/**
- * Stroop Challenge - Say the color of the word, not the text
- */
+// stroop-challenge.js
 
 class StroopChallenge {
-    constructor() {
-        this.words = ['RED', 'BLUE', 'GREEN', 'YELLOW', 'PURPLE', 'ORANGE'];
-        this.colors = {
-            'RED': '#ff4757',
-            'BLUE': '#3742fa',
-            'GREEN': '#2ed573',
-            'YELLOW': '#ffa502',
-            'PURPLE': '#a55eea',
-            'ORANGE': '#ff6348'
-        };
-        this.currentWord = null;
-        this.currentColor = null;
-        this.difficulty = 'easy';
-        this.timeLimit = 5000;
-        this.timer = null;
+  constructor() {
+    this.words = ['Red', 'Blue', 'Green', 'Yellow'];
+    this.colors = ['red', 'blue', 'green', 'yellow'];
+    this.currentWord = '';
+    this.currentColor = '';
+    this.difficulty = 'easy';
+    this.timeLimit = 5000;
+    this.promptCount = 0;
+    this.maxPrompts = 10;
+    this.startTime = null;
+  }
+
+  setDifficulty(level) {
+    this.difficulty = level;
+    const timeMap = { easy: 5000, medium: 4000, hard: 3000, insane: 2000 };
+    this.timeLimit = timeMap[level] || 5000;
+  }
+
+  generatePrompt() {
+    const wordIndex = Math.floor(Math.random() * this.words.length);
+    const colorIndex = Math.floor(Math.random() * this.colors.length);
+    this.currentWord = this.words[wordIndex];
+    this.currentColor = this.colors[colorIndex];
+  }
+
+  start() {
+    this.promptCount = 0;
+    this.renderNewPrompt();
+  }
+
+  stop() {
+    clearTimeout(this.timer);
+  }
+
+  renderNewPrompt() {
+    this.generatePrompt();
+    this.startTime = performance.now();
+
+    const container = document.getElementById('challenge-container');
+    container.innerHTML = `
+      <div class="challenge-title">Stroop Challenge</div>
+      <div class="color-box" style="background:${this.currentColor}; color:white">
+        ${this.currentWord}
+      </div>
+      <div class="voice-instruction" id="voice-instruction">
+        🧠 Say "Opposite" if word ≠ color, or "Same" if they match
+      </div>
+      <div class="latency-display">Waiting for your voice...</div>
+    `;
+  }
+
+  checkAnswer(transcript, confidence) {
+    const latency = Math.round(performance.now() - this.startTime);
+    const normalized = transcript.trim().toLowerCase();
+
+    const latencyDisplay = document.querySelector('.latency-display');
+    const instruction = document.getElementById('voice-instruction');
+
+    latencyDisplay.innerHTML = `Response Time: <strong>${latency}ms</strong><br>Transcript: "${transcript}"`;
+
+    const isOpposite = this.currentWord.toLowerCase() !== this.currentColor;
+    const userSaidOpposite = normalized.includes('opposite');
+    const userSaidSame = normalized.includes('same');
+
+    const isCorrect = (isOpposite && userSaidOpposite) || (!isOpposite && userSaidSame);
+
+    if (isCorrect) {
+      new Audio('src/assets/sounds/correct.mp3').play();
+      this.promptCount++;
+      instruction.innerHTML = '✅ Correct! Get ready for the next one...';
+
+      if (this.promptCount >= this.maxPrompts) {
+        window.engine.endSession();
+      } else {
+        setTimeout(() => this.renderNewPrompt(), 2000);
+      }
+
+      return { correct: true, latency };
+    } else {
+      new Audio('src/assets/sounds/wrong.mp3').play();
+      instruction.innerHTML = `❌ Incorrect. Say "${isOpposite ? 'Opposite' : 'Same'}"`;
+      return { correct: false, latency };
     }
-
-    start() {
-        this.generateNewWord();
-        this.render();
-        this.startTimer();
-    }
-
-    stop() {
-        if (this.timer) {
-            clearTimeout(this.timer);
-            this.timer = null;
-        }
-    }
-
-    generateNewWord() {
-        this.currentWord = this.words[Math.floor(Math.random() * this.words.length)];
-
-        // Ensure the font color does NOT match the word itself (Stroop effect)
-        let possibleColors = this.words.filter(color => color !== this.currentWord);
-        this.currentColor = possibleColors[Math.floor(Math.random() * possibleColors.length)];
-    }
-
-    render() {
-        const container = document.getElementById('challenge-container');
-        container.innerHTML = `
-            <div class="challenge-title">Stroop Effect Challenge</div>
-            <div class="color-box" style="background: white; color: ${this.colors[this.currentColor]}; font-size: 2rem;">
-                ${this.currentWord}
-            </div>
-        `;
-
-        const instruction = document.getElementById('voice-instruction');
-        instruction.innerHTML = `🧠 Say the COLOR of the word, not the text: <strong>${this.currentColor}</strong>`;
-    }
-
-    checkAnswer(transcription, confidence) {
-        const userAnswer = transcription.toLowerCase().trim();
-        const correct = userAnswer.includes(this.currentColor.toLowerCase());
-
-        if (correct) {
-            this.stop();
-            return {
-                correct: true,
-                nextInstruction: '🟢 Nice! That was tricky! Next challenge...'
-            };
-        } else {
-            return {
-                correct: false,
-                instruction: `Try again! Say the COLOR: "${this.currentColor}" not the word: "${this.currentWord}".`
-            };
-        }
-    }
-
-    setDifficulty(level) {
-        this.difficulty = level;
-        const timeMap = { easy: 5000, medium: 3000, hard: 2000, insane: 1000 };
-        this.timeLimit = timeMap[level] || 5000;
-    }
-
-    startTimer() {
-        this.timer = setTimeout(() => {
-            this.generateNewWord();
-            this.render();
-            this.startTimer();
-        }, this.timeLimit);
-    }
+  }
 }
+
+export default StroopChallenge;
