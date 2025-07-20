@@ -9,13 +9,13 @@ class NeuroDashApp {
         this.voiceController = null;
         this.analytics = null;
         this.isTraining = false;
-        
+
         this.init();
     }
 
     async init() {
         try {
-            // Initialize components
+            // Initialize modules
             this.analytics = new GameAnalytics();
             this.gameEngine = new GameEngine(this.analytics);
             this.voiceController = new VoiceController({
@@ -26,14 +26,14 @@ class NeuroDashApp {
 
             // Setup event listeners
             this.setupEventListeners();
-            
+
             // Initialize UI
             this.updateUI();
-            
-            console.log('NeuroDash initialized successfully');
+
+            console.log('NeuroDash initialized');
         } catch (error) {
-            console.error('Failed to initialize NeuroDash:', error);
-            this.showError('Failed to initialize. Please check your internet connection.');
+            console.error('Initialization failed:', error);
+            this.showError('Initialization failed. Check your internet connection.');
         }
     }
 
@@ -46,7 +46,7 @@ class NeuroDashApp {
 
     async toggleTraining() {
         const startBtn = document.getElementById('start-btn');
-        
+
         if (!this.isTraining) {
             try {
                 await this.voiceController.start();
@@ -56,8 +56,8 @@ class NeuroDashApp {
                 startBtn.classList.add('active');
                 this.updateMicStatus('active');
             } catch (error) {
-                console.error('Failed to start training:', error);
-                this.showError('Failed to start voice recognition. Please check microphone permissions.');
+                console.error('Start failed:', error);
+                this.showError('Failed to start voice recognition. Check mic permissions.');
             }
         } else {
             this.voiceController.stop();
@@ -76,29 +76,38 @@ class NeuroDashApp {
         const result = this.gameEngine.processVoiceCommand(transcription, confidence);
         const totalLatency = Date.now() - startTime + processingTime;
 
-        // Update analytics
+        // 🔊 Play feedback sounds
+        const correctSound = new Audio('src/assets/sounds/correct.mp3');
+        const wrongSound = new Audio('src/assets/sounds/wrong.mp3');
+        result.correct ? correctSound.play() : wrongSound.play();
+
+        // 🧠 Show debug feedback
+        const instructionEl = document.getElementById('voice-instruction');
+        instructionEl.innerHTML = `
+            🗣️ You said: <strong>${transcription}</strong><br>
+            ✅ Correct? <strong>${result.correct ? 'Yes' : 'No'}</strong><br>
+            🕒 Latency: <strong>${totalLatency}ms</strong>
+        `;
+        instructionEl.className = result.correct ? 'voice-instruction correct' : 'voice-instruction incorrect';
+
+        // 📊 Update metrics
         this.analytics.recordResponse(transcription, result.correct, totalLatency);
-        
-        // Update UI
         this.updateLatencyDisplay(totalLatency);
         this.updateStats();
-        
-        // Provide feedback
-        this.provideFeedback(result);
+
+        // ⏳ Reset message
+        setTimeout(() => {
+            instructionEl.className = 'voice-instruction';
+            instructionEl.innerText = result.correct
+                ? result.nextInstruction
+                : result.instruction;
+        }, 1500);
     }
 
     updateLatencyDisplay(latency) {
-        document.getElementById('latency-value').textContent = `${latency}ms`;
-        
-        // Color code based on performance
-        const latencyEl = document.getElementById('latency-value');
-        if (latency < 300) {
-            latencyEl.className = 'excellent';
-        } else if (latency < 500) {
-            latencyEl.className = 'good';
-        } else {
-            latencyEl.className = 'slow';
-        }
+        const el = document.getElementById('latency-value');
+        el.textContent = `${Math.round(latency)}ms`;
+        el.className = latency < 300 ? 'excellent' : latency < 500 ? 'good' : 'slow';
     }
 
     updateStats() {
@@ -106,22 +115,6 @@ class NeuroDashApp {
         document.getElementById('avg-latency').textContent = `${Math.round(stats.averageLatency)}ms`;
         document.getElementById('accuracy').textContent = `${Math.round(stats.accuracy)}%`;
         document.getElementById('streak').textContent = stats.currentStreak;
-    }
-
-    provideFeedback(result) {
-        const instruction = document.getElementById('voice-instruction');
-        if (result.correct) {
-            instruction.innerHTML = '✅ Correct! ' + result.nextInstruction;
-            instruction.className = 'voice-instruction correct';
-        } else {
-            instruction.innerHTML = '❌ Try again! ' + result.instruction;
-            instruction.className = 'voice-instruction incorrect';
-        }
-        
-        // Reset styling after delay
-        setTimeout(() => {
-            instruction.className = 'voice-instruction';
-        }, 1500);
     }
 
     nextChallenge() {
@@ -146,9 +139,7 @@ class NeuroDashApp {
 
     updateUI() {
         const currentChallenge = this.gameEngine.getCurrentChallenge();
-        if (currentChallenge) {
-            currentChallenge.render();
-        }
+        if (currentChallenge) currentChallenge.render();
     }
 
     handleVoiceError(error) {
@@ -163,7 +154,7 @@ class NeuroDashApp {
     }
 }
 
-// Initialize app when DOM is loaded
+// Launch on DOM load
 document.addEventListener('DOMContentLoaded', () => {
     window.neuroDashApp = new NeuroDashApp();
 });
